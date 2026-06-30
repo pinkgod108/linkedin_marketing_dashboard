@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Summer of AI GTM — Marketing LinkedIn Dashboard</title>
+    <script src="./vendor/chart.umd.js"></script>
+    <script src="./vendor/papaparse.min.js"></script>
+    <style>
+        :root {
+            --maroon: #7B2D42;
+            --maroon-dark: #5C1D2E;
+            --maroon-light: #9B3D52;
+            --sienna: #C4693B;
+            --sienna-light: #D4795B;
+            --cream: #FDF6EC;
+            --mustard: #E8B84B;
+            --mustard-light: #F5CC6A;
+            --card-bg: #FFFFFF;
+            --neutral-bg: #F5EDE0;
+            --border: #E8D5C4;
+            --text-dark: #2C1810;
+            --text-medium: #6B4C3B;
+            --text-light: #9B7B6A;
+            --shadow: 0 2px 12px rgba(123, 45, 66, 0.07);
+            --shadow-hover: 0 8px 28px rgba(123, 45, 66, 0.14);
+            --radius: 18px;
+            --radius-sm: 10px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--cream);
+            color: var(--text-dark);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        /* ── Header ── */
+        .header {
+            background: linear-gradient(140deg, var(--maroon-dark) 0%, var(--maroon) 60%, #9B3D52 100%);
+            color: white;
+            padding: 52px 32px 48px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -60px; right: -60px;
+            width: 320px; height: 320px;
+            background: radial-gradient(circle, rgba(232,184,75,0.12) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: -80px; left: -40px;
+            width: 280px; height: 280px;
+            background: radial-gradient(circle, rgba(196,105,59,0.15) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .header-inner {
+            position: relative;
+            z-index: 1;
+            max-width: 680px;
+            margin: 0 auto;
+        }
+
+        .header-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(232,184,75,0.18);
+            border: 1px solid rgba(232,184,75,0.35);
+            color: var(--mustard-light);
+            padding: 5px 18px;
+            border-radius: 100px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 2.6rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            line-height: 1.1;
+            margin-bottom: 12px;
+        }
+
+        .header h1 em {
+            font-style: normal;
+            color: var(--mustard);
+        }
+
+        .header-sub {
+            font-size: 0.95rem;
+            color: rgba(255,255,255,0.65);
+            line-height: 1.6;
+        }
+
+        /* ── Layout ── */
+        .container {
+            max-width: 1160px;
+            margin: 0 auto;
+            padding: 36px 24px 16px;
+        }
+
+        section { margin-bottom: 52px; }
+
+        .section-header {
+            margin-bottom: 22px;
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .section-header h2 {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: var(--maroon);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-header h2::before {
+            content: '';
+            display: block;
+            width: 4px;
+            height: 18px;
+            background: linear-gradient(180deg, var(--mustard) 0%, var(--sienna) 100%);
+            border-radius: 2px;
+            flex-shrink: 0;
+        }
+
+        .section-sub {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border), transparent);
+            margin: 52px 0;
+        }
+
+        /* ── Upload bar ── */
+        .upload-bar {
+            background: white;
+            border: 2px dashed var(--border);
+            border-radius: var(--radius);
+            padding: 20px 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 44px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .upload-bar:hover {
+            border-color: var(--sienna);
+            box-shadow: var(--shadow);
+        }
+
+        .upload-bar-text h3 {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+
+        .upload-bar-text p {
+            font-size: 0.8rem;
+            color: var(--text-light);
+            margin-top: 2px;
+        }
+
+        .btn-upload {
+            background: var(--maroon);
+            color: white;
+            border: none;
+            padding: 10px 22px;
+            border-radius: 100px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+        .btn-upload:hover {
+            background: var(--maroon-light);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 14px rgba(123,45,66,0.28);
+        }
+
+        /* ── Metric cards ── */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 14px;
+        }
+
+        .metric-card {
+            background: white;
+            border-radius: var(--radius);
+            padding: 22px 24px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            transition: all 0.2s;
+        }
+
+        .metric-card:hover {
+            box-shadow: var(--shadow-hover);
+            transform: translateY(-2px);
+        }
+
+        .metric-card .mc-label {
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            color: var(--text-light);
+            margin-bottom: 8px;
+        }
+
+        .metric-card .mc-value {
+            font-size: 2.1rem;
+            font-weight: 800;
+            color: var(--maroon);
+            line-height: 1;
+            margin-bottom: 5px;
+            letter-spacing: -0.02em;
+        }
+
+        .metric-card .mc-sub {
+            font-size: 0.78rem;
+            color: var(--text-medium);
+            line-height: 1.4;
+        }
+
+        .metric-card.accent {
+            background: var(--neutral-bg);
+        }
+
+        .metric-card.accent .mc-value {
+            color: var(--sienna);
+        }
+
+        .metric-card.mustard-card {
+            background: linear-gradient(135deg, #FFFBEE 0%, #FEF3C0 100%);
+            border-color: #F5CC6A;
+        }
+
+        .metric-card.mustard-card .mc-value {
+            color: #8B6914;
+        }
+
+        /* ── Highlight cards (best post / most viewed) ── */
+        .highlights-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            margin-top: 14px;
+        }
+
+        .highlight-card {
+            background: linear-gradient(140deg, var(--maroon-dark) 0%, var(--maroon) 100%);
+            border-radius: var(--radius);
+            padding: 24px 28px;
+            color: white;
+            box-shadow: 0 4px 20px rgba(92,29,46,0.25);
+            transition: all 0.2s;
+        }
+
+        .highlight-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(92,29,46,0.32);
+        }
+
+        .highlight-card .hc-label {
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.09em;
+            color: rgba(255,255,255,0.55);
+            margin-bottom: 10px;
+        }
+
+        .highlight-card .hc-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--mustard);
+            line-height: 1.35;
+            margin-bottom: 8px;
+        }
+
+        .highlight-card .hc-stat {
+            font-size: 0.82rem;
+            color: rgba(255,255,255,0.65);
+        }
+
+        /* ── Charts ── */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .chart-card {
+            background: white;
+            border-radius: var(--radius);
+            padding: 24px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+        }
+
+        .chart-card.wide { grid-column: 1 / -1; }
+
+        .chart-card h3 {
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: var(--maroon);
+            margin-bottom: 18px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .chart-wrap {
+            position: relative;
+            height: 210px;
+        }
+
+        /* ── Post cards ── */
+        .posts-list { display: grid; gap: 14px; }
+
+        .post-card {
+            background: white;
+            border-radius: var(--radius);
+            padding: 22px 24px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 16px;
+            align-items: start;
+            transition: all 0.2s;
+        }
+
+        .post-card:hover {
+            box-shadow: var(--shadow-hover);
+            border-color: var(--sienna);
+        }
+
+        .post-card.top-post {
+            border-color: var(--mustard);
+            background: linear-gradient(to right, #FFFCF0, white);
+        }
+
+        .post-meta {
+            font-size: 0.75rem;
+            color: var(--text-light);
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .post-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            line-height: 1.4;
+            margin-bottom: 14px;
+        }
+
+        .post-stats {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .stat-chip {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: var(--neutral-bg);
+            border-radius: 10px;
+            padding: 8px 14px;
+            min-width: 68px;
+        }
+
+        .stat-chip .sc-val {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: var(--maroon);
+            line-height: 1;
+        }
+
+        .stat-chip .sc-label {
+            font-size: 0.67rem;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-weight: 600;
+            margin-top: 3px;
+        }
+
+        .stat-chip.eng-chip {
+            background: linear-gradient(135deg, var(--mustard) 0%, var(--mustard-light) 100%);
+        }
+
+        .stat-chip.eng-chip .sc-val { color: #5C3D00; }
+        .stat-chip.eng-chip .sc-label { color: #7A5500; }
+
+        .post-actions {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 10px;
+        }
+
+        .rank-badge {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: var(--neutral-bg);
+            border: 1.5px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--text-medium);
+        }
+
+        .rank-badge.gold {
+            background: var(--mustard);
+            border-color: #D4A030;
+            color: #5C3D00;
+        }
+
+        .post-link-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: var(--maroon);
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 100px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .post-link-btn:hover {
+            background: var(--sienna);
+            transform: translateY(-1px);
+        }
+
+        /* ── Recommendations ── */
+        .recs-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            margin-bottom: 18px;
+        }
+
+        .rec-card {
+            background: white;
+            border-radius: var(--radius);
+            padding: 20px 22px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--sienna);
+        }
+
+        .rec-card .rc-label {
+            font-size: 0.72rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--sienna);
+            margin-bottom: 8px;
+        }
+
+        .rec-card p {
+            font-size: 0.88rem;
+            color: var(--text-dark);
+            line-height: 1.55;
+        }
+
+        .ideas-box {
+            background: linear-gradient(135deg, #FDF3E5 0%, #F9EAD6 100%);
+            border-radius: var(--radius);
+            padding: 28px 32px;
+            border: 1px solid #EECFA8;
+        }
+
+        .ideas-box h3 {
+            font-size: 0.95rem;
+            font-weight: 800;
+            color: var(--maroon);
+            margin-bottom: 18px;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .idea-row {
+            display: flex;
+            gap: 14px;
+            align-items: flex-start;
+            margin-bottom: 14px;
+        }
+
+        .idea-row:last-child { margin-bottom: 0; }
+
+        .idea-num {
+            width: 28px;
+            height: 28px;
+            background: var(--mustard);
+            color: #5C3D00;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.78rem;
+            font-weight: 800;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .idea-text {
+            font-size: 0.9rem;
+            color: var(--text-dark);
+            line-height: 1.55;
+        }
+
+        /* ── Toast ── */
+        .toast {
+            position: fixed;
+            bottom: 28px;
+            right: 28px;
+            background: #2C1810;
+            color: white;
+            padding: 12px 22px;
+            border-radius: var(--radius-sm);
+            font-size: 0.85rem;
+            font-weight: 600;
+            box-shadow: 0 6px 24px rgba(0,0,0,0.18);
+            z-index: 999;
+            opacity: 0;
+            transform: translateY(16px);
+            transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+            pointer-events: none;
+        }
+
+        .toast.visible { opacity: 1; transform: translateY(0); }
+
+        /* ── Loading / Error ── */
+        .state-screen {
+            text-align: center;
+            padding: 80px 32px;
+            color: var(--text-medium);
+        }
+
+        .spinner {
+            width: 38px; height: 38px;
+            border: 3px solid var(--border);
+            border-top-color: var(--maroon);
+            border-radius: 50%;
+            animation: spin 0.75s linear infinite;
+            margin: 0 auto 18px;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── Footer ── */
+        .footer {
+            text-align: center;
+            padding: 28px 24px 32px;
+            color: var(--text-light);
+            font-size: 0.78rem;
+            border-top: 1px solid var(--border);
+            line-height: 1.8;
+        }
+
+        .footer code {
+            background: var(--neutral-bg);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            color: var(--sienna);
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 800px) {
+            .metrics-grid { grid-template-columns: 1fr 1fr; }
+            .highlights-row { grid-template-columns: 1fr; }
+            .charts-grid { grid-template-columns: 1fr; }
+            .chart-card.wide { grid-column: auto; }
+            .recs-grid { grid-template-columns: 1fr; }
+            .upload-bar { flex-direction: column; text-align: center; }
+            .header h1 { font-size: 1.9rem; }
+        }
+
+        @media (max-width: 520px) {
+            .metrics-grid { grid-template-columns: 1fr; }
+            .post-card { grid-template-columns: 1fr; }
+            .post-actions { flex-direction: row; justify-content: space-between; align-items: center; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ── Header ─────────────────────────────────────────── -->
+<header class="header">
+    <div class="header-inner">
+        <div class="header-badge">✦ Summer of AI GTM</div>
+        <h1>Marketing <em>LinkedIn</em> Dashboard</h1>
+        <p class="header-sub">Tracking LinkedIn post performance as part of the Summer of AI GTM learning project.</p>
+    </div>
+</header>
+
+<!-- ── Main ───────────────────────────────────────────── -->
+<main class="container">
+
+    <!-- Upload bar -->
+    <div class="upload-bar">
+        <div class="upload-bar-text">
+            <h3>Upload New CSV</h3>
+            <p>Replace the current data with an updated export from LinkedIn Analytics.</p>
+        </div>
+        <button class="btn-upload" onclick="document.getElementById('csv-input').click()">
+            ↑ &nbsp;Upload New CSV
+        </button>
+        <input type="file" id="csv-input" accept=".csv" style="display:none" onchange="handleUpload(event)">
+    </div>
+
+    <!-- Dashboard content injected here -->
+    <div id="dash-root">
+        <div class="state-screen">
+            <div class="spinner"></div>
+            <p>Loading your dashboard…</p>
+        </div>
+    </div>
+
+</main>
+
+<!-- ── Footer ─────────────────────────────────────────── -->
+<footer class="footer">
+    Summer of AI GTM · Marketing LinkedIn Dashboard · Built with Claude Code
+    <br>
+    To update data: edit <code>linkedin-post.csv</code> in GitHub → commit → Vercel redeploys automatically.
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────────────────────
+//  State
+// ─────────────────────────────────────────────────────────
+let charts = {};
+
+// ─────────────────────────────────────────────────────────
+//  CSV loading
+// ─────────────────────────────────────────────────────────
+async function loadDefault() {
+    try {
+        const res = await fetch('./linkedin-post.csv');
+        if (!res.ok) throw new Error('not found');
+        processCSV(await res.text());
+    } catch {
+        showError('Could not load the default CSV. Use the Upload button above to load your data.');
+    }
+}
+
+function handleUpload(evt) {
+    const file = evt.target.files[0];
+    if (!file) return;
+    if (!confirm('This will delete and replace the current CSV data. Do you want to continue?')) {
+        evt.target.value = '';
+        return;
+    }
+    const reader = new FileReader();
+    reader.onload = e => {
+        processCSV(e.target.result);
+        toast('CSV uploaded — dashboard updated!');
+    };
+    reader.readAsText(file);
+    evt.target.value = '';
+}
+
+function processCSV(text) {
+    const parsed = Papa.parse(text, {
+        header: true,
+        skipEmptyLines: true,
+        transformHeader: h => h.trim(),
+    });
+
+    const posts = parsed.data
+        .map(row => {
+            const imp  = num(row['Impressions']);
+            const reax = num(row['Reactions']);
+            const comm = num(row['Comments']);
+            const shr  = num(row['Shares']);
+            return {
+                date:      cleanDate(row['Date'] || ''),
+                time:      (row['Time'] || '').trim(),
+                title:     (row['Title'] || 'Untitled Post').trim(),
+                impressions: imp,
+                membersReached: num(row['Members Reached']),
+                reactions: reax,
+                comments:  comm,
+                shares:    shr,
+                url:       (row['URL'] || '').trim(),
+                eng:       imp > 0 ? +((reax + comm + shr) / imp * 100).toFixed(2) : 0,
+            };
+        })
+        .filter(p => p.impressions > 0 || p.title !== 'Untitled Post')
+        .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    render(posts);
+}
+
+// Strip weekday prefix from dates like "Wed, 2026-05-20"
+function cleanDate(raw) {
+    return raw.replace(/^[A-Za-z]+,\s*/, '').trim();
+}
+
+function num(v) {
+    if (v === undefined || v === null || v === '') return 0;
+    return parseInt(String(v).replace(/,/g, ''), 10) || 0;
+}
+
+// ─────────────────────────────────────────────────────────
+//  Render
+// ─────────────────────────────────────────────────────────
+function render(posts) {
+    Object.values(charts).forEach(c => c.destroy());
+    charts = {};
+    document.getElementById('dash-root').innerHTML = buildHTML(posts);
+    buildCharts(posts);
+}
+
+function buildHTML(posts) {
+    const totImp  = tot(posts, 'impressions');
+    const totReax = tot(posts, 'reactions');
+    const totComm = tot(posts, 'comments');
+    const totShr  = tot(posts, 'shares');
+    const avgEng  = posts.length
+        ? (posts.reduce((s, p) => s + p.eng, 0) / posts.length).toFixed(2)
+        : '0.00';
+
+    const byEng  = [...posts].sort((a, b) => b.eng  - a.eng);
+    const byImp  = [...posts].sort((a, b) => b.impressions - a.impressions);
+    const byComm = [...posts].sort((a, b) => b.comments - a.comments);
+    const best   = byEng[0];
+    const topImp = byImp[0];
+    const topComm = byComm[0];
+
+    return `
+    <!-- ── Overall Summary ── -->
+    <section>
+        <div class="section-header">
+            <h2>Overall Summary</h2>
+            <span class="section-sub">${posts.length} post${posts.length !== 1 ? 's' : ''} analyzed</span>
+        </div>
+        <div class="metrics-grid">
+            ${mc('Total Impressions',    fmt(totImp),  'Times your posts appeared in feeds')}
+            ${mc('Total Reactions',      fmt(totReax), 'Likes, claps & other reactions')}
+            ${mc('Total Comments',       fmt(totComm), 'Comments across all posts', 'accent')}
+            ${mc('Total Shares',         fmt(totShr),  'Times your posts were reshared', 'accent')}
+            ${mc('Avg Engagement Rate',  avgEng + '%', '(Reactions + Comments + Shares) ÷ Impressions × 100', 'mustard-card')}
+            ${mc('Posts Analyzed',       posts.length, 'Total posts in this dataset')}
+        </div>
+        <div class="highlights-row">
+            ${hc('🏆 Best Performing Post', best?.title, best?.eng + '% engagement rate')}
+            ${hc('👁️ Most Viewed Post',     topImp?.title, fmt(topImp?.impressions) + ' impressions')}
+        </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- ── Visual Performance ── -->
+    <section>
+        <div class="section-header">
+            <h2>Visual Performance</h2>
+            <span class="section-sub">How your posts compare at a glance</span>
+        </div>
+        <div class="charts-grid">
+            <div class="chart-card">
+                <h3>Impressions by Post</h3>
+                <div class="chart-wrap"><canvas id="ch-imp"></canvas></div>
+            </div>
+            <div class="chart-card">
+                <h3>Engagement Rate by Post</h3>
+                <div class="chart-wrap"><canvas id="ch-eng"></canvas></div>
+            </div>
+            <div class="chart-card wide">
+                <h3>Reactions, Comments &amp; Shares by Post</h3>
+                <div class="chart-wrap"><canvas id="ch-int"></canvas></div>
+            </div>
+        </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- ── Performance by Post ── -->
+    <section>
+        <div class="section-header">
+            <h2>Performance by Post</h2>
+            <span class="section-sub">Sorted by most recent · Engagement rate calculated automatically</span>
+        </div>
+        <div class="posts-list">
+            ${posts.map((p, i) => postCard(p, i, best)).join('')}
+        </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- ── Recommendations ── -->
+    <section>
+        <div class="section-header">
+            <h2>Recommendations</h2>
+            <span class="section-sub">What your data says — and what to post next</span>
+        </div>
+        ${buildRecs(posts, best, topImp, topComm, avgEng)}
+    </section>
+    `;
+}
+
+// Metric card
+function mc(label, value, sub, cls = '') {
+    return `
+    <div class="metric-card ${cls}">
+        <div class="mc-label">${label}</div>
+        <div class="mc-value">${value}</div>
+        <div class="mc-sub">${sub}</div>
+    </div>`;
+}
+
+// Highlight card
+function hc(label, title, stat) {
+    return `
+    <div class="highlight-card">
+        <div class="hc-label">${label}</div>
+        <div class="hc-title">${title || '—'}</div>
+        <div class="hc-stat">${stat || ''}</div>
+    </div>`;
+}
+
+// Post card
+function postCard(post, idx, best) {
+    const isTop = post === best;
+    return `
+    <div class="post-card ${isTop ? 'top-post' : ''}">
+        <div>
+            <div class="post-meta">${post.date}${post.time ? ' · ' + post.time : ''}</div>
+            <div class="post-title">${esc(post.title)}</div>
+            <div class="post-stats">
+                <div class="stat-chip">
+                    <span class="sc-val">${fmt(post.impressions)}</span>
+                    <span class="sc-label">Impressions</span>
+                </div>
+                <div class="stat-chip">
+                    <span class="sc-val">${post.reactions}</span>
+                    <span class="sc-label">Reactions</span>
+                </div>
+                <div class="stat-chip">
+                    <span class="sc-val">${post.comments}</span>
+                    <span class="sc-label">Comments</span>
+                </div>
+                <div class="stat-chip">
+                    <span class="sc-val">${post.shares}</span>
+                    <span class="sc-label">Shares</span>
+                </div>
+                <div class="stat-chip eng-chip">
+                    <span class="sc-val">${post.eng}%</span>
+                    <span class="sc-label">Engagement</span>
+                </div>
+            </div>
+        </div>
+        <div class="post-actions">
+            <div class="rank-badge ${isTop ? 'gold' : ''}">${isTop ? '★' : '#' + (idx + 1)}</div>
+            ${post.url ? `<a class="post-link-btn" href="${esc(post.url)}" target="_blank" rel="noopener noreferrer">View →</a>` : ''}
+        </div>
+    </div>`;
+}
+
+// Recommendations section
+function buildRecs(posts, best, topImp, topComm, avgEng) {
+    const ideas = genIdeas(posts, best, topImp, topComm);
+
+    return `
+    <div class="recs-grid">
+        <div class="rec-card">
+            <div class="rc-label">🏆 Best Engagement</div>
+            <p><strong>${esc(best?.title)}</strong> had your highest engagement rate at <strong>${best?.eng}%</strong>.
+            Your audience responded strongly — create more content in this vein.</p>
+        </div>
+        <div class="rec-card">
+            <div class="rc-label">👁️ Most Impressions</div>
+            <p><strong>${esc(topImp?.title)}</strong> reached the most people with
+            <strong>${fmt(topImp?.impressions)}</strong> impressions.
+            This format or timing helped you get discovered.</p>
+        </div>
+        <div class="rec-card">
+            <div class="rc-label">💬 Most Comments</div>
+            <p><strong>${esc(topComm?.title)}</strong> sparked the most conversation
+            with <strong>${topComm?.comments}</strong> comment${topComm?.comments !== 1 ? 's' : ''}.
+            Posts that invite discussion build the strongest audience relationships.</p>
+        </div>
+        <div class="rec-card">
+            <div class="rc-label">📈 Post More Of</div>
+            <p>Your average engagement rate is <strong>${avgEng}%</strong>.
+            Posts that share a concrete framework or personal story
+            consistently outperform pure announcements — lean into that.</p>
+        </div>
+    </div>
+    <div class="ideas-box">
+        <h3>💡 What to Post Next</h3>
+        ${ideas.map((txt, i) => `
+        <div class="idea-row">
+            <div class="idea-num">${i + 1}</div>
+            <div class="idea-text">${txt}</div>
+        </div>`).join('')}
+    </div>`;
+}
+
+function genIdeas(posts, best, topImp, topComm) {
+    const ideas = [];
+
+    // Idea 1 — follow-up on best engagement post
+    ideas.push(
+        `Write a follow-up or deeper dive on <strong>"${esc(best?.title)}"</strong> — ` +
+        `your audience clearly connected with it. Share a specific outcome, lesson learned, ` +
+        `or "what happened next" to continue the conversation.`
+    );
+
+    // Idea 2 — convert top-viewed into high-engagement
+    if (topImp && topImp !== best) {
+        ideas.push(
+            `Revisit the format of <strong>"${esc(topImp?.title)}"</strong> — ` +
+            `it reached the most people (${fmt(topImp?.impressions)} impressions) but had lower engagement. ` +
+            `Reframe it with a stronger hook or a direct question at the end to turn viewers into engagers.`
+        );
+    } else {
+        ideas.push(
+            `Ask a direct question or share a contrarian take on an AI in marketing topic — ` +
+            `your audience engages most when you invite their opinion rather than just sharing information.`
+        );
+    }
+
+    // Idea 3 — based on most commented or general pattern
+    if (topComm && topComm.comments > 0 && topComm !== best) {
+        ideas.push(
+            `Turn the discussion from <strong>"${esc(topComm?.title)}"</strong> into a new post. ` +
+            `People commented — they have opinions. Pose a follow-up question about that subject ` +
+            `to spark even more conversation.`
+        );
+    } else {
+        ideas.push(
+            `Share a "Summer of AI GTM" progress update — document what you've learned, ` +
+            `what surprised you, and what you'd do differently. Authentic behind-the-scenes ` +
+            `learning posts consistently build strong personal brand engagement on LinkedIn.`
+        );
+    }
+
+    return ideas;
+}
+
+// ─────────────────────────────────────────────────────────
+//  Charts
+// ─────────────────────────────────────────────────────────
+function buildCharts(posts) {
+    const labels = posts.map(p => trunc(p.title, 20));
+
+    const C = {
+        maroon:  '#7B2D42',
+        sienna:  '#C4693B',
+        mustard: '#E8B84B',
+        neutral: '#F5EDE0',
+    };
+
+    const baseOpts = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                backgroundColor: '#2C1810',
+                titleColor: '#E8B84B',
+                bodyColor: '#FDF6EC',
+                padding: 10,
+                cornerRadius: 8,
+            },
+        },
+        scales: {
+            x: {
+                grid: { display: false },
+                border: { display: false },
+                ticks: {
+                    color: '#9B7B6A',
+                    font: { size: 11, family: "'Segoe UI', system-ui, sans-serif" },
+                    maxRotation: 30,
+                },
+            },
+            y: {
+                grid: { color: '#F0E4D4', lineWidth: 1 },
+                border: { display: false },
+                ticks: {
+                    color: '#9B7B6A',
+                    font: { size: 11, family: "'Segoe UI', system-ui, sans-serif" },
+                },
+            },
+        },
+    };
+
+    charts.imp = new Chart(document.getElementById('ch-imp'), {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [{
+                label: 'Impressions',
+                data: posts.map(p => p.impressions),
+                backgroundColor: C.maroon,
+                hoverBackgroundColor: C.sienna,
+                borderRadius: 8,
+                borderSkipped: false,
+            }],
+        },
+        options: baseOpts,
+    });
+
+    charts.eng = new Chart(document.getElementById('ch-eng'), {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [{
+                label: 'Engagement Rate (%)',
+                data: posts.map(p => p.eng),
+                backgroundColor: C.mustard,
+                hoverBackgroundColor: '#D4A030',
+                borderRadius: 8,
+                borderSkipped: false,
+            }],
+        },
+        options: baseOpts,
+    });
+
+    charts.int = new Chart(document.getElementById('ch-int'), {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [
+                {
+                    label: 'Reactions',
+                    data: posts.map(p => p.reactions),
+                    backgroundColor: C.maroon,
+                    hoverBackgroundColor: '#9B3D52',
+                    borderRadius: 6,
+                    borderSkipped: false,
+                },
+                {
+                    label: 'Comments',
+                    data: posts.map(p => p.comments),
+                    backgroundColor: C.sienna,
+                    hoverBackgroundColor: '#D4795B',
+                    borderRadius: 6,
+                    borderSkipped: false,
+                },
+                {
+                    label: 'Shares',
+                    data: posts.map(p => p.shares),
+                    backgroundColor: C.mustard,
+                    hoverBackgroundColor: '#D4A030',
+                    borderRadius: 6,
+                    borderSkipped: false,
+                },
+            ],
+        },
+        options: {
+            ...baseOpts,
+            plugins: {
+                ...baseOpts.plugins,
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: {
+                        color: '#6B4C3B',
+                        font: { size: 11, family: "'Segoe UI', system-ui, sans-serif" },
+                        boxWidth: 12,
+                        padding: 16,
+                    },
+                },
+            },
+        },
+    });
+}
+
+// ─────────────────────────────────────────────────────────
+//  Helpers
+// ─────────────────────────────────────────────────────────
+function tot(arr, key) { return arr.reduce((s, p) => s + (p[key] || 0), 0); }
+function fmt(n) { return (n || 0).toLocaleString(); }
+function trunc(s, n) { return s.length > n ? s.slice(0, n) + '…' : s; }
+function esc(s) {
+    if (!s) return '';
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function toast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('visible');
+    setTimeout(() => el.classList.remove('visible'), 3500);
+}
+
+function showError(msg) {
+    document.getElementById('dash-root').innerHTML = `
+    <div class="state-screen">
+        <div style="font-size:2.5rem;margin-bottom:14px;">📊</div>
+        <p style="font-size:1rem;font-weight:700;margin-bottom:6px;">No data loaded</p>
+        <p style="font-size:0.88rem;">${msg}</p>
+    </div>`;
+}
+
+// ─────────────────────────────────────────────────────────
+//  Init
+// ─────────────────────────────────────────────────────────
+loadDefault();
+</script>
+</body>
+</html>
